@@ -1,0 +1,116 @@
+# Job Scout - Target Companies
+# Replace these examples with your own target companies.
+#
+# Supported ATS types:
+#   greenhouse    → public JSON API
+#   lever         → public JSON API
+#   ashby         → public JSON API (tries posting-api then v1 fallback)
+#   workday       → internal JSON API
+#   icims         → session-based HTML scraper
+#   successfactors → REST API
+#   workable      → public JSON API
+#   custom        → generic HTML scraper (Taleo, Avature, Jobvite, custom portals)
+#
+# To find the right ATS and slug for a company:
+#   1. Open their careers page and click into any job posting
+#   2. Check the apply URL — it usually reveals the ATS platform and slug/tenant
+#   3. See README.md for full configuration details by ATS type
+#
+# verified: true  = ATS confirmed via direct URL inspection
+# verified: false = inferred; update if scraping returns empty results
+
+companies:
+
+  # ── GREENHOUSE (Public JSON API) ───────────────────────────────────────────
+  # Slug from: boards.greenhouse.io/{slug} or job-boards.greenhouse.io/{slug}
+
+  - name: "Airbnb"
+    ats: greenhouse
+    greenhouse_slug: airbnb
+    verified: true
+    notes: "Example: standard Greenhouse setup"
+
+  - name: "Figma"
+    ats: greenhouse
+    greenhouse_slug: figma
+    verified: true
+    notes: "Example: Greenhouse"
+
+  # ── LEVER (Public JSON API) ────────────────────────────────────────────────
+  # Slug from: jobs.lever.co/{slug}
+
+  - name: "Carta"
+    ats: lever
+    lever_slug: carta
+    verified: true
+    notes: "Example: Lever"
+
+  # ── ASHBY (Public JSON API) ────────────────────────────────────────────────
+  # Slug from: jobs.ashbyhq.com/{slug}
+  # Agent automatically tries the newer posting-api endpoint, then falls back to v1
+
+  - name: "Linear"
+    ats: ashby
+    ashby_slug: linear
+    verified: true
+    notes: "Example: Ashby — agent handles both API versions automatically"
+
+  # ── WORKDAY (Internal JSON API) ────────────────────────────────────────────
+  # From the career URL: https://{tenant}.{instance}.myworkdayjobs.com/en-US/{job_board}/...
+
+  - name: "Salesforce"
+    ats: workday
+    workday_tenant: salesforce
+    workday_instance: wd12
+    workday_job_board: External_Career_Site
+    verified: true
+    notes: "Example: Workday — verify job_board segment from actual URL"
+
+  - name: "Red Hat"
+    ats: workday
+    workday_tenant: redhat
+    workday_instance: wd5
+    workday_job_board: Jobs
+    verified: true
+    notes: "Example: Workday"
+
+  # ── iCIMS (Session-based HTML scraper) ────────────────────────────────────
+  # Tenant from apply URL: https://{tenant}.icims.com/jobs/...
+  # career_url: use your browser's filtered search URL for best results
+
+  - name: "Example Corp (iCIMS)"
+    ats: icims
+    icims_tenant: careers-example
+    career_url: "https://careers-example.icims.com/jobs/search?ss=1&searchRelation=keyword_all"
+    verified: false
+    notes: "Example: iCIMS — replace tenant and career_url with real values"
+
+  # ── SAP SUCCESSFACTORS (REST API) ──────────────────────────────────────────
+  # Company ID from apply URL: career4.successfactors.com/careers?company={id}
+
+  - name: "Example University"
+    ats: successfactors
+    sf_company_id: exampleUnivP1
+    career_url: "https://career4.successfactors.com/careers?company=exampleUnivP1"
+    verified: false
+    notes: "Example: SuccessFactors — common at universities and large enterprises"
+
+  # ── WORKABLE (Public JSON API) ─────────────────────────────────────────────
+  # Slug from: apply.workable.com/{slug}
+
+  - name: "Example Startup (Workable)"
+    ats: workable
+    workable_slug: example-startup
+    verified: false
+    notes: "Example: Workable — common at small/mid-size companies"
+
+  # ── CUSTOM / TALEO / AVATURE / JOBVITE / FALLBACK ─────────────────────────
+  # Used for any ATS without a supported API.
+  # Best-effort HTML scraping — may not work on JavaScript-heavy pages.
+  # Taleo, Avature, and some iCIMS configurations typically fail here.
+
+  - name: "Example Corp (Custom)"
+    ats: custom
+    career_url: "https://www.example.com/careers/open-positions"
+    verified: false
+    notes: "Example: custom portal — works best on server-rendered pages"
