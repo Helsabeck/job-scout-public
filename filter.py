@@ -131,7 +131,7 @@ BACKGROUND:
 - 16 years of experience in Business Intelligence and Program Management
 - Expert: Power BI (DAX, Power Query, semantic models, RLS), Power Automate, Power Apps, Excel/VBA, SharePoint, Azure DevOps
 - Proficient: SQL (moderate), Python (actively upskilling), Copilot Studio
-- No experience with: Tableau as primary tool, Snowflake, Databricks, dbt, Spark
+- No experience with: Snowflake, Databricks, dbt, Spark
 - Program management: Led workstreams on enterprise programs ($12M–$191M budgets), cross-functional stakeholder management, executive-level advisory
 - AI governance: Built and maintained tracking/reporting platform for 150+ AI use cases
 - Domain: Financial services, HR transformation, procurement, workforce analytics
@@ -189,7 +189,7 @@ def score_jobs(jobs: list[dict]) -> list[dict]:
 
         try:
             resp = client.messages.create(
-                model="claude-sonnet-4-20250514",
+                model="claude-sonnet-5",
                 max_tokens=1000,
                 system=SYSTEM_PROMPT,
                 messages=[
