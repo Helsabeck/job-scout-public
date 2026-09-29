@@ -87,6 +87,7 @@ job-scout/
 ├── companies.yaml                       # Target companies and ATS settings
 ├── scout.py                             # Runs each step in order
 ├── filter.py                            # Keyword filter, location filter, Claude scoring
+├── profile.txt                          # Your fit profile for Claude scoring (you create this)
 ├── digest.py                            # Builds and sends the HTML email
 ├── seen_jobs.json                       # Job IDs already seen (updated each run)
 └── ats/
@@ -118,7 +119,7 @@ job-scout/
 
 - Edit `INCLUDE_KEYWORDS` and `EXCLUDE_KEYWORDS` for your target roles.
 - Edit `LOCAL_TERMS` for your target geography.
-- Edit `SYSTEM_PROMPT` to describe your background and the roles you want.
+- Create a `profile.txt` file next to `filter.py` that describes your background and the roles you want. Use `EXAMPLE_PROMPT` in `filter.py` as a starting point. Without `profile.txt`, the scout scores against the example.
 
 **4. Add GitHub Secrets** under Settings → Secrets and variables → Actions:
 
@@ -208,7 +209,7 @@ Edit `FOREIGN_EXCLUDE_TERMS` to add countries or cities to drop, and `LOCAL_TERM
 
 ### Claude scoring
 
-Edit `SYSTEM_PROMPT` in `filter.py` to describe your background, the roles you want, and what to rule out. Plain English works. There's no special syntax.
+Write your background, the roles you want, and what to rule out in `profile.txt`. Plain English works. There's no special syntax. Keep the last instruction from `EXAMPLE_PROMPT` that asks for a JSON array, since the code reads Claude's answer in that format.
 
 ## How the baseline works
 
