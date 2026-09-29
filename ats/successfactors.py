@@ -1,7 +1,6 @@
 """
-SAP SuccessFactors ATS - Internal JSON API
-Uses the undocumented but stable job search endpoint.
-Confirmed working for: Duke University (dukeuniverP1)
+SAP SuccessFactors ATS - reads the same JSON feed the public career page loads.
+Example company ID: exampleco (from career4.successfactors.com/careers?company=exampleco)
 """
 
 import requests
@@ -20,7 +19,7 @@ HEADERS = {
 def fetch_jobs(company_id: str) -> list[dict]:
     """
     Fetch jobs from a SuccessFactors job board.
-    company_id: e.g. 'dukeuniverP1'
+    company_id: e.g. 'exampleco'
     """
     url = (
         f"https://career4.successfactors.com/restapi/jobsearch/v2"

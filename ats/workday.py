@@ -1,5 +1,5 @@
 """
-Workday ATS - Internal JSON API (undocumented but stable)
+Workday ATS - reads the same JSON feed the public career page loads.
 Pagination handled automatically; pulls up to 500 jobs per company.
 """
 
@@ -16,7 +16,7 @@ HEADERS = {
 def fetch_jobs(tenant: str, instance: str, job_board: str = "Jobs") -> list[dict]:
     """
     Fetch jobs from a Workday instance.
-    tenant: e.g. 'iqvia'
+    tenant: e.g. 'examplecorp'
     instance: e.g. 'wd1'
     job_board: path segment after /en-US/ in the career URL
     """

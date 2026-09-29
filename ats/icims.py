@@ -23,7 +23,7 @@ HEADERS = {
 def fetch_jobs(tenant: str, search_url: str = None) -> list[dict]:
     """
     Fetch jobs from an iCIMS job board.
-    tenant:     subdomain e.g. 'globalcareers-sas'
+    tenant:     subdomain e.g. 'careers-examplecorp'
     search_url: pre-filtered URL from companies.yaml (used as-is, no modifications)
     """
     base_url = f"https://{tenant}.icims.com"

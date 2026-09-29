@@ -7,6 +7,7 @@ Stage 3: Claude API scoring (paid — quality matching against your profile)
 
 import json
 import os
+from pathlib import Path
 import anthropic
 
 
@@ -69,7 +70,6 @@ def keyword_prefilter(jobs: list[dict]) -> list[dict]:
 
 # ── Stage 2: Location Pre-filter ──────────────────────────────────────────────
 
-# Locations containing ANY of these → exclude (foreign postings)
 FOREIGN_EXCLUDE_TERMS = [
     "india", "bangalore", "bengaluru", "hyderabad", "mumbai", "pune",
     "chennai", "delhi", "gurugram", "noida",
@@ -83,8 +83,6 @@ FOREIGN_EXCLUDE_TERMS = [
     "philippines", "manila",
 ]
 
-# Locations containing ANY of these → keep (local or remote)
-# Customize this list for your target geography
 LOCAL_TERMS = [
     "raleigh", "cary", "durham", "chapel hill", "morrisville",
     "apex", "garner", "wendell", "holly springs", "clayton",
@@ -92,7 +90,7 @@ LOCAL_TERMS = [
     "wake county", "durham county", "orange county",
     "north carolina", ", nc",
     "remote", "work from home", "wfh", "virtual", "anywhere",
-    "united states", "usa",
+    "united states of america", "united states", "usa",
 ]
 
 
@@ -124,8 +122,11 @@ def location_prefilter(jobs: list[dict]) -> list[dict]:
 
 # ── Stage 3: Claude API Scoring ───────────────────────────────────────────────
 
-# Customize this prompt to match your background and target roles
-SYSTEM_PROMPT = """You are evaluating job postings for a candidate with the following profile:
+# Your personal fit profile lives in profile.txt next to this file. That file is
+# never copied to the public repo. If it's missing, the generic example below is used.
+PROFILE_FILE = Path(__file__).with_name("profile.txt")
+
+EXAMPLE_PROMPT = """You are evaluating job postings for a candidate with the following profile:
 
 BACKGROUND:
 - 16 years of experience in Business Intelligence and Program Management
@@ -158,21 +159,37 @@ Respond ONLY with a JSON array, one object per job, in the same order received:
 [{"fit": "YES", "reason": "brief reason"}, {"fit": "NO", "reason": "brief reason"}, ...]"""
 
 
-def score_jobs(jobs: list[dict]) -> list[dict]:
+def load_system_prompt() -> str:
+    """Return the personal profile from profile.txt, or the example if it's absent."""
+    if PROFILE_FILE.exists():
+        return PROFILE_FILE.read_text(encoding="utf-8")
+    print("  [Filter] profile.txt not found. Using the example profile.")
+    return EXAMPLE_PROMPT
+
+
+SYSTEM_PROMPT = load_system_prompt()
+
+
+def score_jobs(jobs: list[dict]) -> tuple[list[dict], list[str]]:
     """
-    Score jobs with Claude API. Returns only YES matches with fit_reason added.
+    Score jobs with Claude API.
+    Returns (matched_jobs, errors).
+    - matched_jobs: only YES matches with fit_reason added
+    - errors: list of error messages from any failed batches
     Processes in batches of 15 to balance latency and API cost.
     """
     if not jobs:
-        return []
+        return [], []
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        print("  [Filter] ANTHROPIC_API_KEY not set — skipping Claude scoring.")
-        return jobs
+        msg = "ANTHROPIC_API_KEY not set — Claude scoring skipped."
+        print(f"  [Filter] {msg}")
+        return jobs, [msg]
 
     client = anthropic.Anthropic(api_key=api_key)
     matched = []
+    errors = []
     batch_size = 15
 
     for batch_start in range(0, len(jobs), batch_size):
@@ -190,17 +207,23 @@ def score_jobs(jobs: list[dict]) -> list[dict]:
         try:
             resp = client.messages.create(
                 model="claude-sonnet-5",
-                max_tokens=1000,
+                max_tokens=4000,
                 system=SYSTEM_PROMPT,
                 messages=[
                     {
                         "role": "user",
-                        "content": f"Evaluate these {len(batch)} job postings:\n\n{job_list}",
+                        "content": (
+                            f"Evaluate these {len(batch)} job postings:\n\n{job_list}"
+                        ),
                     }
                 ],
             )
 
-            raw = resp.content[0].text.strip()
+            # Find the text block — skip any thinking blocks
+            raw = next(
+                block.text for block in resp.content
+                if hasattr(block, "text") and block.type == "text"
+            ).strip()
 
             # Strip markdown code fences if present
             if raw.startswith("```"):
@@ -219,8 +242,12 @@ def score_jobs(jobs: list[dict]) -> list[dict]:
                     matched.append(job)
 
         except json.JSONDecodeError as e:
-            print(f"  [Filter] JSON parse error on batch {batch_start}: {e}")
+            msg = f"JSON parse error on batch starting at job {batch_start + 1}: {e}"
+            print(f"  [Filter] {msg}")
+            errors.append(msg)
         except Exception as e:
-            print(f"  [Filter] API error on batch {batch_start}: {e}")
+            msg = f"API error on batch starting at job {batch_start + 1}: {str(e)[:200]}"
+            print(f"  [Filter] {msg}")
+            errors.append(msg)
 
-    return matched
+    return matched, errors

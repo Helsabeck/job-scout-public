@@ -1,5 +1,5 @@
 """
-digest.py - Build and send the weekly HTML email digest.
+digest.py - Build and send the daily HTML email digest.
 Uses Gmail SMTP with an app password (stored in GitHub Secrets).
 """
 
@@ -24,7 +24,7 @@ def build_html(
         <html><body style="font-family:-apple-system,Arial,sans-serif;max-width:700px;margin:0 auto;padding:24px;color:#222;">
         <h2 style="color:#1a1a2e;">✅ Job Scout Initialized — {run_date}</h2>
         <p>The job scout is running. All current job IDs have been saved as a baseline.</p>
-        <p>From next Monday onward, you'll receive a digest of <strong>new</strong> postings only.</p>
+        <p>From the next run onward, you'll receive a digest of <strong>new</strong> postings only.</p>
         </body></html>
         """
 
@@ -75,30 +75,49 @@ def build_html(
         <table style="width:100%;border-collapse:collapse;margin-bottom:24px;
             font-size:13px;color:#555;border:1px solid #eee;border-radius:6px;">
             <tr style="background:#f9f9f9;">
-                <td style="padding:8px 14px;">📥 Total jobs fetched</td>
+                <td style="padding:8px 14px;">Total jobs fetched</td>
                 <td style="padding:8px 14px;text-align:right;font-weight:600;">
                     {stats.get("fetched", 0):,}
                 </td>
             </tr>
             <tr>
-                <td style="padding:8px 14px;">🆕 New since last run</td>
+                <td style="padding:8px 14px;">New since last run</td>
                 <td style="padding:8px 14px;text-align:right;font-weight:600;">
                     {stats.get("new", 0):,}
                 </td>
             </tr>
             <tr style="background:#f9f9f9;">
-                <td style="padding:8px 14px;">🔑 Passed keyword filter</td>
+                <td style="padding:8px 14px;">Passed keyword + location filter</td>
                 <td style="padding:8px 14px;text-align:right;font-weight:600;">
                     {stats.get("candidates", 0):,}
                 </td>
             </tr>
             <tr>
-                <td style="padding:8px 14px;">✅ Matched by Claude</td>
+                <td style="padding:8px 14px;">Matched by Claude</td>
                 <td style="padding:8px 14px;text-align:right;font-weight:600;color:{matched_color};">
                     {stats.get("matched", 0):,}
                 </td>
             </tr>
         </table>"""
+
+    # Claude scoring error banner
+    scoring_error_section = ""
+    if stats and stats.get("scoring_errors"):
+        errors = stats["scoring_errors"]
+        first_error = str(errors[0])[:300]
+        scoring_error_section = f"""
+        <p style="margin-top:16px;padding:12px 16px;background:#fef2f2;
+            border-left:4px solid #dc2626;font-size:13px;color:#555;">
+            Claude API scoring failed on {len(errors)} batch(es)
+            — matched roles above may be incomplete.<br><br>
+            <span style="font-family:monospace;font-size:11px;color:#888;">
+                {first_error}
+            </span><br><br>
+            Check your Anthropic API key and credit balance at
+            <a href="https://console.anthropic.com" style="color:#dc2626;">
+                console.anthropic.com
+            </a>
+        </p>"""
 
     # Warning section for failed companies
     warning_section = ""
@@ -106,7 +125,7 @@ def build_html(
         warning_section = f"""
         <p style="margin-top:24px;padding:12px 16px;background:#fff8e1;
             border-left:4px solid #f59e0b;font-size:13px;color:#555;">
-            ⚠️ <strong>Could not reach:</strong> {", ".join(failed_companies)}.
+            <strong>Could not reach:</strong> {", ".join(failed_companies)}.
             These sites may block automated requests. Check their career pages manually.
         </p>"""
 
@@ -114,7 +133,7 @@ def build_html(
     if not matched_jobs:
         no_matches_msg = """
         <p style="padding:20px;background:#f9f9f9;border-radius:6px;color:#666;text-align:center;">
-            No new matching roles found this week. The search continues.
+            No new matching roles found today. The search continues.
         </p>"""
 
     table_section = ""
@@ -136,7 +155,7 @@ def build_html(
         f"<strong>{len(matched_jobs)} new match{'es' if len(matched_jobs) != 1 else ''}</strong>"
         f" across {len(by_company)} company/companies."
         if matched_jobs
-        else "No new matches this week."
+        else "No new matches today."
     )
 
     return f"""
@@ -145,7 +164,7 @@ def build_html(
         margin:0 auto;padding:24px;color:#222;">
 
         <h2 style="color:#1a1a2e;margin-bottom:4px;">
-            🔍 Job Scout — {run_date}
+            Job Scout -- {run_date}
         </h2>
         <p style="color:#666;margin-top:4px;margin-bottom:20px;font-size:14px;">
             {count_text}
@@ -154,6 +173,7 @@ def build_html(
         {stats_section}
         {table_section}
         {no_matches_msg}
+        {scoring_error_section}
         {warning_section}
 
         <p style="color:#aaa;font-size:11px;margin-top:32px;border-top:1px solid #eee;padding-top:12px;">
@@ -172,11 +192,11 @@ def send_email(html: str, matched_count: int, is_first_run: bool = False) -> Non
     app_password = os.environ["GMAIL_APP_PASSWORD"]
 
     if is_first_run:
-        subject = "✅ Job Scout: Initialized and running"
+        subject = "Job Scout: Initialized and running"
     elif matched_count > 0:
-        subject = f"🔍 Job Scout: {matched_count} new role{'s' if matched_count != 1 else ''} found"
+        subject = f"Job Scout: {matched_count} new role{'s' if matched_count != 1 else ''} found"
     else:
-        subject = "Job Scout: No new matches this week"
+        subject = "Job Scout: No new matches today"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -190,9 +210,9 @@ def send_email(html: str, matched_count: int, is_first_run: bool = False) -> Non
             server.starttls()
             server.login(sender, app_password)
             server.sendmail(sender, recipient, msg.as_string())
-        print(f"  [Digest] Email sent → {recipient} | Subject: {subject}")
+        print(f"  [Digest] Email sent to {recipient} | Subject: {subject}")
     except smtplib.SMTPAuthenticationError:
-        print("  [Digest] Auth failed — check GMAIL_APP_PASSWORD secret.")
+        print("  [Digest] Auth failed -- check GMAIL_APP_PASSWORD secret.")
         raise
     except Exception as e:
         print(f"  [Digest] Failed to send email: {e}")

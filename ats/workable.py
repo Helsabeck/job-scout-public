@@ -1,6 +1,6 @@
 """
 Workable ATS - Public JSON API
-Confirmed working for: Eton Solutions (eton-solutions)
+Example slug: example-company (from apply.workable.com/example-company)
 API docs: https://workable.com/api
 """
 

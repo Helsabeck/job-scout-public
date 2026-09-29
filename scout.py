@@ -6,7 +6,6 @@ Run on schedule: GitHub Actions (.github/workflows/weekly_scan.yml)
 """
 
 import json
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -56,7 +55,6 @@ def fetch_company_jobs(company: dict) -> tuple[list[dict], bool]:
     ats = company.get("ats", "custom")
     name = company["name"]
     jobs = []
-    success = True
 
     try:
         if ats == "greenhouse":
@@ -84,15 +82,11 @@ def fetch_company_jobs(company: dict) -> tuple[list[dict], bool]:
         print(f"  [Scout] Unexpected error fetching {name}: {e}")
         return [], False
 
-    # Tag each job with company name
     for job in jobs:
         job["company"] = name
 
-    if not jobs:
-        success = False
-
     print(f"  {name}: {len(jobs)} jobs fetched {'✓' if jobs else '✗'}")
-    return jobs, success
+    return jobs, bool(jobs)
 
 
 # ── New job detection ──────────────────────────────────────────────────────────
@@ -161,6 +155,8 @@ def main() -> None:
     # ── 3. Filter and score ────────────────────────────────────────────────────
     matched = []
     candidates = []
+    scoring_errors = []
+
     if not is_first_run and new_jobs:
         print("\n[3/4] Filtering...")
         candidates = keyword_prefilter(new_jobs)
@@ -170,8 +166,10 @@ def main() -> None:
 
         if candidates:
             print(f"  Scoring {len(candidates)} candidates with Claude API...")
-            matched = score_jobs(candidates)
+            matched, scoring_errors = score_jobs(candidates)
             print(f"  Matched: {len(matched)}")
+            if scoring_errors:
+                print(f"  ⚠ Scoring errors on {len(scoring_errors)} batch(es)")
         else:
             print("  No candidates passed filters.")
     else:
@@ -185,15 +183,31 @@ def main() -> None:
         "new": len(new_jobs),
         "candidates": len(candidates) if not is_first_run else 0,
         "matched": len(matched),
+        "scoring_errors": scoring_errors if not is_first_run else [],
     }
     html = build_html(matched, failed_companies, run_date, is_first_run, stats=stats)
     send_email(html, len(matched), is_first_run)
 
     # ── 5. Save updated seen_jobs ──────────────────────────────────────────────
-    seen = update_seen(seen, all_jobs)
+    if scoring_errors:
+        # Scoring failed for some batches — only save jobs that never reached
+        # Claude (fetched but filtered out). Jobs that reached scoring stay
+        # unseen so they get another attempt on the next run.
+        candidate_company_names = {job["company"] for job in candidates}
+        safe_to_save = [
+            job for job in all_jobs
+            if job["company"] not in candidate_company_names
+        ]
+        print(f"\n  Scoring errors detected — skipping seen_jobs update for "
+              f"{len(candidate_company_names)} companies with candidates: "
+              f"{', '.join(sorted(candidate_company_names))}")
+        seen = update_seen(seen, safe_to_save)
+    else:
+        seen = update_seen(seen, all_jobs)
+
     save_seen_jobs(seen)
     total_tracked = sum(len(v) for v in seen.values())
-    print(f"\n  Saved seen_jobs.json ({total_tracked} total job IDs tracked)")
+    print(f"  Saved seen_jobs.json ({total_tracked} total job IDs tracked)")
 
     print(f"\n{'='*60}")
     print("Job Scout complete.")

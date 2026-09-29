@@ -1,0 +1,48 @@
+name: Weekly Job Scout
+
+on:
+  schedule:
+    # Monday through Friday at 11:17 UTC
+    # = 7:17 AM ET during daylight saving time, 6:17 AM ET the rest of the year
+    - cron: '17 11 * * 1-5'
+
+  # Allows you to run manually from the Actions tab in GitHub
+  workflow_dispatch:
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+
+    # Must have write permission to commit seen_jobs.json back to the repo
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run job scout
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_RECIPIENT: ${{ secrets.EMAIL_RECIPIENT }}
+        run: python scout.py
+
+      - name: Commit updated seen_jobs.json
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "Job Scout Bot"
+          git add seen_jobs.json
+          git diff --staged --quiet || git commit -m "chore: update seen_jobs [skip ci]"
+          git pull --rebase origin main
+          git push
