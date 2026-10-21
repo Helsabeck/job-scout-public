@@ -206,7 +206,7 @@ def score_jobs(jobs: list[dict]) -> tuple[list[dict], list[str]]:
 
         try:
             resp = client.messages.create(
-                model="claude-sonnet-5",
+                model="claude-sonnet-5.5",
                 max_tokens=4000,
                 system=SYSTEM_PROMPT,
                 messages=[
