@@ -12,7 +12,9 @@ I started building Job Scout in early May 2026.
 
 - Monitors approximately 30 company career pages across eight applicant tracking systems.
 - Has checked more than 20,000 unique job postings since launch.
-- Matched roles feed an Excel scoring dashboard where I've evaluated 700+ roles on five weighted dimensions.
+  - About 800 (roughly 4%) made it past the free filters to the paid API call for scoring.
+  - Claude matched about 300 of those.
+- Matched roles feed a scoring dashboard, along with roles found elsewhere. I've evaluated nearly 1,000 roles there on five weighted dimensions.
 - Costs under $0.50 a week to run.
 
 ## What it does
