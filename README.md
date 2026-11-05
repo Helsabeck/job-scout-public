@@ -71,7 +71,7 @@ Most companies post jobs through one of a handful of applicant tracking systems 
 - Claude scores on title, company, and location only. It doesn't read the full job description. That's deliberate: it keeps cost down, and the detailed evaluation happens in my dashboard.
 - The first run saves a baseline without scoring anything. Otherwise every open posting would look new and the first digest would be noise.
 
-##What broke and what I changed
+## What broke and what I changed
 
 - A model deprecation failed silently for weeks. The API stopped accepting the old model name, scoring returned nothing, and the digests just looked like slow days. I added a scoring-failure warning to the digest and stopped marking failed postings as seen, so they retry on the next run.
 - Scoring responses got cut off. Claude’s JSON answers were longer than my token limit for some batches, which broke parsing. I raised the limit and made parse failures visible instead of skipping them.
