@@ -4,6 +4,8 @@ Every weekday morning, Job Scout checks approximately 30 company career pages, f
 
 I built it because checking that many career pages by hand wasn't something I could keep up with week after week. The scout does the checking. I spend my time on the roles worth a closer look.
 
+Day-to-day development happens in a private repo, since it holds my real target list and scoring profile. This public copy is synced from it periodically, which is why the history here is short.
+
 ## Results
 
 I started building Job Scout in early May 2026.
