@@ -27,6 +27,16 @@ I started building Job Scout in early May 2026.
 
 The whole thing runs in GitHub Actions on a schedule. I don't maintain a server for it.
 
+```mermaid
+flowchart LR
+  A[~30 career pages] --> B[New since last run?]
+  B --> C[Keyword filter<br/>free]
+  C --> D[Location filter<br/>free]
+  D --> E[Claude scoring<br/>paid, batches of 15]
+  E --> F[Email digest]
+  E -. failed batch retries next run .-> B
+```
+
 ## Cost control: free filters first, AI scoring last
 
 The only step that costs money is the Claude API call, so the scout runs the cheap filters first and only pays for what survives them.
